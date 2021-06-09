@@ -12,7 +12,7 @@ def f(x, t, context):
     return -k * x
 
 
-def draw_diff(N0, k, h, n_steps, x):
+def draw_diff(N0, k, h, x):
     # t = np.arange(0, (n_steps+1) * h, h)
     t = np.array([h*i for i in range(len(x))])
     x_true = N0 * (np.e ** (-k * t))
@@ -22,7 +22,7 @@ def draw_diff(N0, k, h, n_steps, x):
     plt.show()
     
 
-def display_error(N0, k, h, n_steps, x):
+def display_error(N0, k, h, x):
     t = np.array([h*i for i in range(len(x))])
     x_true = N0 * (np.e ** (-k * t))
     diff = x - x_true
@@ -31,8 +31,8 @@ def display_error(N0, k, h, n_steps, x):
     print(f'Стандартное отклонение ошибки = {np.std(diff)}\n')
 
 
-def draw_exact(N0, k, h, n_steps):
-    t = np.arange(0, n_steps * h + 0.1, 0.001)
+def draw_exact(N0, k, t0, t_end):
+    t = np.arange(0, (t_end - t0) + 0.1, 0.001)
     x_true = N0 * (np.e ** (-k * t))
     plt.plot(t, x_true, 'k')
     plt.grid()
@@ -43,28 +43,25 @@ def draw_exact(N0, k, h, n_steps):
 # return x_history, t_history
 
 
-def euler_forward(x0, t0, t_end, h, func, context, trunc_zero=True):
+def euler_forward(x0, t0, t_end, h, func, context, callback, trunc_zero=True):
     nsteps = int((t_end - t0) / h)
     x = x0
     t = t0
-    x_history = [x]
-    t_history = [t]
+    callback(t, x)
     for i in range(nsteps):
         x =  x + h * func(x, t, context)
         t += h
-        x_history.append(x)
-        t_history.append(t)
-        if x_history[-1] < 0 and trunc_zero:
-            x_history[-1] = 0
-    return x_history, t_history
+        if x < 0 and trunc_zero:
+            x = 0
+        callback(t, x)
+    return
 
 
-def rk4(x0, t0, t_end, h, func, context, trunc_zero=True):
+def rk4(x0, t0, t_end, h, func, context, callback, trunc_zero=True):
     nsteps = int((t_end - t0) / h)
     x = x0
     t = t0
-    x_history = [x]
-    t_history = [t]
+    callback(t, x)
     for i in range(nsteps):
         k1 = func(x, t, context)
         k2 = func(x + h * (k1 / 2), t + h / 2, context)
@@ -72,90 +69,82 @@ def rk4(x0, t0, t_end, h, func, context, trunc_zero=True):
         k4 = func(x + h * k3, t + h, context)
         x = x + 1 / 6 * h * (k1 + 2 * k2 + 2 * k3 + k4)
         t += h
-        x_history.append(x)
-        t_history.append(t)
-    return x_history, t_history
+        if x < 0 and trunc_zero:
+            x = 0
+        callback(t, x)
+    return 
 
 
-def euler_backward(x0, t0, t_end, h, func, context, trunc_zero=True):
+def euler_backward(x0, t0, t_end, h, func, context, callback, trunc_zero=True):
     nsteps = int((t_end - t0) / h)
     x = x0
     t = t0
-    x_history = [x]
-    t_history = [t]
+    callback(t, x)
     for i in range(nsteps):
         x = x + h * func(x, t, context)
         f_ = lambda xp, f, t0, x0, h, context: xp - x0 - h * f(xp, t0 + h, context)
         x = fsolve(f_, x, args=(func, t, x, h, context))
         t += h
-        x_history.append(x)
-        t_history.append(t)
-        if x_history[-1] < 0 and trunc_zero:
-            x_history[-1] = 0
-    return x_history, t_history
+        if x < 0 and trunc_zero:
+            x = 0
+        callback(t, x)
+    return
 
 
-def midpoint(x0, t0, t_end, h, func, context, trunc_zero=True):
+def midpoint(x0, t0, t_end, h, func, context, callback, trunc_zero=True):
     nsteps = int((t_end - t0) / h)
     x = x0
     t = t0
-    x_history = [x]
-    t_history = [t]
+    callback(t, x)
     for i in range(nsteps):
         k1 = func(x, t, context)
         k2 = func(x + h * (k1 / 2), t + h / 2, context)
         x = x + h * k2
         t += h
-        x_history.append(x)
-        t_history.append(t)
-        if x_history[-1] < 0 and trunc_zero:
-            x_history[-1] = 0
-    return x_history, t_history
+        if x < 0 and trunc_zero:
+            x = 0
+        callback(t, x)
+    return
 
 
-def ralston2(x0, t0, t_end, h, func, context, trunc_zero=True):
+def ralston2(x0, t0, t_end, h, func, context, callback, trunc_zero=True):
     nsteps = int((t_end - t0) / h)
     x = x0
     t = t0
-    x_history = [x]
-    t_history = [t]
+    callback(t, x)
     for i in range(nsteps):
         k1 = func(x, t, context)
         k2 = func(x + 2 * h * (k1 / 3), t + 2 * h / 3, context)
         x = x + h * (k1 / 4 + 3 * k2 / 4)
         t += h
-        x_history.append(x)
-        t_history.append(t)
-        if x_history[-1] < 0 and trunc_zero:
-            x_history[-1] = 0
-    return x_history, t_history
+        if x < 0 and trunc_zero:
+            x = 0
+        callback(t, x)
+    return
 
 
-def ralston3(x0, t0, t_end, h, func, context, trunc_zero=True):
+def ralston3(x0, t0, t_end, h, func, context, callback, trunc_zero=True):
     nsteps = int((t_end - t0) / h)
     x = x0
     t = t0
-    x_history = [x]
-    t_history = [t]
+    callback(t, x)
     for i in range(nsteps):
         k1 = func(x, t, context)
         k2 = func(x + h * (k1 / 2), t + h / 2, context)
         k3 = func(x + 3 * h * (k2 / 4), t + 3 * h / 4, context)
         x = x + h * (2 * k1 / 9 + k2 / 3 + 4 * k3 / 9)
         t += h
-        x_history.append(x)
-        t_history.append(t)
-        if x_history[-1] < 0 and trunc_zero:
-            x_history[-1] = 0
-    return x_history, t_history
+        if x < 0 and trunc_zero:
+            x = 0
+        callback(t, x)
+    return
 
 
-def rkf5(x0, t0, t_end, h, func, context, trunc_zero=True):
+def rkf5(x0, t0, t_end, h, func, context, callback, trunc_zero=True):
     nsteps = int((t_end - t0) / h)
     x = x0
     t = t0
-    x_history = [x]
-    t_history = [t]
+    callback(t, x)
     for i in range(nsteps):
         k1 = func(x, t, context)
         k2 = func(x + h * (k1 / 4), t + h / 4, context)
@@ -166,19 +155,16 @@ def rkf5(x0, t0, t_end, h, func, context, trunc_zero=True):
                   context)
         x = x + h * (16 / 135 * k1 + 6656 / 12825 * k3 + 28561 / 56430 * k4 - 9 / 50 * k5 + 2 / 55 * k6)
         t += h
-        x_history.append(x)
-        t_history.append(t)
-        if x_history[-1] < 0 and trunc_zero:
-            x_history[-1] = 0
-    return x_history, t_history
+        if x < 0 and trunc_zero:
+            x = 0
+        callback(t, x)
+    return
 
-
-def implicit_midpoint(x0, t0, t_end, h, func, context, trunc_zero=True):
+def implicit_midpoint(x0, t0, t_end, h, func, context, callback, trunc_zero=True):
     nsteps = int((t_end - t0) / h)
     x = x0
     t = t0
-    x_history = [x]
-    t_history = [t]
+    callback(t, x)
     for i in range(nsteps):
         tp = t + 0.5 * h
         k = x
@@ -190,22 +176,20 @@ def implicit_midpoint(x0, t0, t_end, h, func, context, trunc_zero=True):
                 break
         x = x + h * k
         t += h
-        x_history.append(x)
-        t_history.append(t)
-        if x_history[-1] < 0 and trunc_zero:
-            x_history[-1] = 0
-    return x_history, t_history
+        if x < 0 and trunc_zero:
+            x = 0
+        callback(t, x)
+    return
 
 
-def rk45(x0, t0, t_end, h, func, context, trunc_zero=True):
+def rk45(x0, t0, t_end, h, func, context, callback, trunc_zero=True):
 #     atol = float(input('A_tol = '))
 #     rtol = float(input('R_tol = '))
     atol = rtol = 10**(-10)
     x = x0
     t = t0
-    x_history = [x]
-    t_history = [t]
-    while t_history[-1] < t_end:
+    callback(t, x)
+    while t < t_end:
         k1 = func(x, t, context)
         k2 = func(x + h * (k1 / 4), t + h / 4, context)
         k3 = func(x + h * (3 / 32 * k1 + 9 / 32 * k2), t + 3 / 8 * h, context)
@@ -223,22 +207,20 @@ def rk45(x0, t0, t_end, h, func, context, trunc_zero=True):
         h = h * (1 / err) ** 0.2
         t += h
         x = xp
-        x_history.append(x)
-        t_history.append(t)
-        if x_history[-1] < 0 and trunc_zero:
-            x_history[-1] = 0
-    return x_history, t_history
+        if x < 0 and trunc_zero:
+            x = 0
+        callback(t, x)
+    return
 
 
-def dopri5(x0, t0, t_end, h, func, context, trunc_zero=True):
+def dopri5(x0, t0, t_end, h, func, context, callback, trunc_zero=True):
 #     atol = float(input('A_tol = '))
 #     rtol = float(input('R_tol = '))
     atol = rtol = 10**(-10)
     x = x0
     t = t0
-    x_history = [x]
-    t_history = [t]
-    while t_history[-1] < t_end:
+    callback(t, x)
+    while t < t_end:
         k1 = func(x, t, context)
         k2 = func(x + h * (k1 / 5), t + h / 5, context)
         k3 = func(x + h * (3 / 40 * k1 + 9 / 40 * k2), t + 3 / 10 * h, context)
@@ -256,14 +238,13 @@ def dopri5(x0, t0, t_end, h, func, context, trunc_zero=True):
         h = h * (1 / err) ** 0.2
         t += h
         x = xp
-        x_history.append(x)
-        t_history.append(t)
-        if x_history[-1] < 0 and trunc_zero:
-            x_history[-1] = 0
-    return x_history, t_history
+        if x < 0 and trunc_zero:
+            x = 0
+        callback(t, x)
+    return 
 
 
-def adams_bashforth(x0, t0, t_end, h, func, context, trunc_zero=True):
+def adams_bashforth(x0, t0, t_end, h, func, context, callback, trunc_zero=True):
     nsteps = int((t_end - t0) / h)
     x = x0
     t = t0
@@ -277,15 +258,20 @@ def adams_bashforth(x0, t0, t_end, h, func, context, trunc_zero=True):
         return xp
     
     acceleration = [0] * 3
+    
     acceleration[0] = x
+    callback(t, x)
+    
     acceleration[1] = step_rk4(x, t, h, func, context)
+    callback(t+h, acceleration[1])
+    
     acceleration[2] = step_rk4(acceleration[1], t+h, h, func, context)
-   
+    callback(t+2*h, acceleration[2])
+    
     x = step_rk4(acceleration[2], t+2*h, h, func, context)
+    callback(t+3*h, x)
+    
     t = t0 + 3*h
-    x_history = acceleration.copy()
-    x_history.append(x)
-    t_history = [t0, t0+h, t0+2*h, t0+3*h]
     
     for i in range(nsteps - 3):
         f_3 = func(acceleration[0], t - 3*h, context)
@@ -299,15 +285,13 @@ def adams_bashforth(x0, t0, t_end, h, func, context, trunc_zero=True):
         x = x + h * (55 / 24 * f_0 - 59 / 24 * f_1 + 37 / 24 * f_2 - 3 / 8 * f_3)
         t += h
         
-        x_history.append(x)
-        t_history.append(t)
-        
-        if x_history[-1] < 0 and trunc_zero:
-            x_history[-1] = 0
-    return x_history, t_history
+        if x < 0 and trunc_zero:
+            x = 0
+        callback(t, x)
+    return
 
 
-def adams_moulton(x0, t0, t_end, h, func, context, trunc_zero=True):
+def adams_moulton(x0, t0, t_end, h, func, context, callback, trunc_zero=True):
     nsteps = int((t_end - t0) / h)
     x = x0
     t = t0
@@ -321,15 +305,20 @@ def adams_moulton(x0, t0, t_end, h, func, context, trunc_zero=True):
         return xp
     
     acceleration = [0] * 3
+    
     acceleration[0] = x
+    callback(t, x)
+    
     acceleration[1] = step_rk4(x, t, h, func, context)
+    callback(t+h, acceleration[1])
+    
     acceleration[2] = step_rk4(acceleration[1], t+h, h, func, context)
-   
+    callback(t+2*h, acceleration[2])
+    
     x = step_rk4(acceleration[2], t+2*h, h, func, context)
+    callback(t+3*h, x)
+    
     t = t0 + 3*h
-    x_history = acceleration.copy()
-    x_history.append(x)
-    t_history = [t0, t0+h, t0+2*h, t0+3*h]
     
     for i in range(nsteps - 3):
         f_3 = func(acceleration[0], t - 3*h, context)
@@ -354,9 +343,7 @@ def adams_moulton(x0, t0, t_end, h, func, context, trunc_zero=True):
         x = x_next
         t += h
         
-        x_history.append(x)
-        t_history.append(t)
-        
-        if x_history[-1] < 0 and trunc_zero:
-            x_history[-1] = 0
-    return x_history, t_history
+        if x < 0 and trunc_zero:
+            x = 0
+        callback(t, x)
+    return
