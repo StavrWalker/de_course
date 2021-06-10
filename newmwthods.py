@@ -202,9 +202,11 @@ def rk45(x0, t0, t_end, h, func, context, callback, trunc_zero=True):
         # оценка метода 4 порядок
         xp = x + h * (25 / 216 * k1 + 1408 / 2565 * k3 + 2197 / 4104 * k4 - 0.2 * k5)
         tol = atol + np.max(np.abs([x_hat, xp])) * rtol
-        err = np.sqrt((x_hat - xp) ** 2 / tol)
-        # h_opt = h * (1 / err)**(1 / (min(p, p_hat) + 1)
-        h = h * (1 / err) ** 0.2
+#         err = np.sqrt((x_hat - xp) ** 2 / tol)
+#         # h_opt = h * (1 / err)**(1 / (min(p, p_hat) + 1)
+#         h = h * (1 / err) ** 0.2
+        if (x_hat - xp) > tol:
+            h *= 0.5
         t += h
         x = xp
         if x < 0 and trunc_zero:
@@ -233,9 +235,11 @@ def dopri5(x0, t0, t_end, h, func, context, callback, trunc_zero=True):
         
         x_hat = x + h * (5179/57600 * k1 + 7571/16695 * k3 + 393/640 * k4 - 92097/339200 * k5 + 187/2100 * k6 + 1/40 * k7)
         tol = atol + np.max(np.abs([x_hat, xp])) * rtol
-        err = np.sqrt((x_hat - xp) ** 2 / tol)
-        # h_opt = h * (1 / err)**(1 / (min(p, p_hat) + 1)
-        h = h * (1 / err) ** 0.2
+#         err = np.sqrt((x_hat - xp) ** 2 / tol)
+#         # h_opt = h * (1 / err)**(1 / (min(p, p_hat) + 1)
+#         h = h * (1 / err) ** 0.2
+        if (x_hat - xp) > tol:
+            h *= 0.5
         t += h
         x = xp
         if x < 0 and trunc_zero:
